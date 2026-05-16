@@ -24,7 +24,7 @@ type AgentState = {
   mode?: string;
   goal?: string;
   ready?: boolean;
-  pendingRequest?: { id: string; prompt: string; createdAt: string } | null;
+  pendingRequest?: { id: number; prompt: string } | null;
   agentStatus?: string;
   lastError?: string | null;
 };
@@ -32,7 +32,7 @@ type AgentState = {
 type ModStatus = {
   ok: boolean;
   endpoint: string;
-  ping: { status: string; ready: boolean } | null;
+  ping: { status: string; ready: boolean; openapiVersion?: string } | null;
   ping_error: string | null;
   agent_state: AgentState | null;
   agent_auth_failed: boolean;
@@ -158,6 +158,8 @@ function Content() {
 
   const pill = modPill(mod);
   const endpoint = mod?.endpoint ?? "—";
+  const agentStatusText = mod?.agent_state?.agentStatus?.trim() || "";
+  const lastErrorText = mod?.agent_state?.lastError?.trim() || "";
 
   return (
     <PanelSection title="Timberbot connector">
@@ -189,6 +191,40 @@ function Content() {
           </span>
         </div>
       </PanelSectionRow>
+      {agentStatusText && (
+        <PanelSectionRow>
+          <div
+            style={{
+              fontSize: 11,
+              color: COLOR_GREY,
+              padding: "2px 0 2px 18px",
+              maxWidth: "100%",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            status: {agentStatusText}
+          </div>
+        </PanelSectionRow>
+      )}
+      {lastErrorText && (
+        <PanelSectionRow>
+          <div
+            style={{
+              fontSize: 11,
+              color: COLOR_RED,
+              padding: "2px 0 2px 18px",
+              maxWidth: "100%",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            error: {lastErrorText}
+          </div>
+        </PanelSectionRow>
+      )}
       <PanelSectionRow>
         <ButtonItem
           layout="below"
