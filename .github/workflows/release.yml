@@ -1,0 +1,86 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v0.1.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build and publish plugin zip
+    runs-on: ubuntu-latest
+    env:
+      PLUGIN_NAME: decky-tbot
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        run: pnpm run build
+
+      - name: Stage plugin contents
+        run: |
+          set -euo pipefail
+          STAGE="${RUNNER_TEMP}/${PLUGIN_NAME}"
+          rm -rf "${STAGE}"
+          mkdir -p "${STAGE}/dist"
+          cp dist/index.js "${STAGE}/dist/"
+          cp package.json plugin.json main.py README.md LICENSE "${STAGE}/"
+          if [ -d assets ]; then
+            cp -r assets "${STAGE}/"
+          fi
+
+      - name: Create zip
+        id: zip
+        run: |
+          set -euo pipefail
+          ZIP_NAME="${PLUGIN_NAME}-${{ steps.tag.outputs.tag }}.zip"
+          (cd "${RUNNER_TEMP}" && zip -r "${GITHUB_WORKSPACE}/${ZIP_NAME}" "${PLUGIN_NAME}")
+          echo "zip=${ZIP_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PLUGIN_NAME }}-${{ steps.tag.outputs.tag }}
+          path: ${{ steps.zip.outputs.zip }}
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
+          generate_release_notes: true
+          files: ${{ steps.zip.outputs.zip }}

@@ -1,0 +1,11 @@
+{
+  "name": "Timberbot Connector",
+  "author": "impuls42",
+  "flags": [],
+  "api_version": 1,
+  "publish": {
+    "tags": ["utility", "timberbot", "systemd"],
+    "description": "Control the tbot-watch.service systemd user unit and surface the Timberbot mod connection from Game Mode.",
+    "image": "https://raw.githubusercontent.com/impuls42/decky-tbot/main/assets/logo.png"
+  }
+}
