@@ -30,12 +30,17 @@ Two status rows + three buttons in the QAM:
   status. Green = active, red = inactive/failed, yellow = transitional,
   grey = unknown.
 - **Mod row** — `GET http://<host>:<port>/api/ping` against the Timberbot
-  mod plus (when an auth token is configured) `GET /api/agent/state`. The
-  pill walks through `Disconnected → Connected · Not Ready → Connected ·
-  Ready · Idle → Connected · Ready · Running` as the player presses Launch
-  in-game and the connector dispatches a request. On a bearer-auth
-  mismatch the pill greys out to `Connected · auth required` — the plugin
-  never errors loudly on auth.
+  mod plus `GET /api/agent/state` (both are gate-exempt, so they answer
+  even before the player presses Launch). The pill walks through
+  `Disconnected → Connected · Not Ready → Connected · Ready · Idle →
+  Connected · Ready · Running` as the player presses Launch in-game and
+  the connector dispatches a request. On a bearer-auth mismatch the pill
+  greys out to `Connected · auth required` — the plugin never errors
+  loudly on auth. When the connector reports `agentStatus` or `lastError`,
+  those surface as small sub-lines under the mod row.
+- The `tbot watch` connector itself talks to the mod over a WebSocket
+  (`/api/ws` on port 8086 by default); the plugin stays HTTP-only and
+  only observes the connector via systemd + the HTTP endpoints above.
 - **Start / Stop / Restart** — wraps the corresponding `systemctl --user`
   verbs.
 - **Logs** — collapsible view of the last 20 `journalctl --user -u
@@ -68,8 +73,8 @@ Documentation=https://github.com/impuls42/timberbot
 
 [Service]
 # `tbot watch` reads host/port/auth_token from ~/.config/timberbot/config.toml
-# or TBOT_* env vars. Add `--listen-port 9000` if you want the push-mode
-# webhook trigger; otherwise the connector falls back to heartbeat polling.
+# or TBOT_* env vars. See `tbot watch --help` for the current flag set
+# (--ws-port, --backend, --model, --autonomous-interval, etc.).
 ExecStart=/home/deck/.local/bin/tbot watch
 Restart=on-failure
 RestartSec=2
